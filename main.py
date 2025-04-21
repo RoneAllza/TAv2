@@ -45,7 +45,7 @@ def on_message(client, userdata, msg):
 
         current_time = datetime.now()
 
-        if current_time - start_time >= timedelta(minutes=1):  # setiap 1 menit
+        if current_time - start_time >= timedelta(hour=1):  # setiap 1 jam, kalo mau testing tinggal diganti ke timedelta(minutes=10)
             if buffer_data:
                 sensor_id = buffer_data[-1]["sensor_id"]
                 avg_ch4 = round(sum(p["ch4"] for p in buffer_data) / len(buffer_data), 2)
