@@ -2,7 +2,7 @@
 
 ## 📡 Sensor MQTT to MySQL Logger
 
-Proyek ini adalah aplikasi Python yang menerima data dari sensor melalui MQTT, menghitung rata-rata data setiap 1 menit dari 10 data terakhir, lalu menyimpannya ke MySQL (Aiven).
+Proyek ini adalah aplikasi Python yang menerima data dari sensor melalui MQTT, menghitung rata-rata data setiap 1 jam dari 10 data terakhir, lalu menyimpannya ke MySQL (Aiven).
 
 ---
 
