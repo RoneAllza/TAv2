@@ -47,11 +47,9 @@ def fetch_and_store():
             co2 = float(feed["field7"]) if feed.get("field7") else None
             ch4 = float(feed["field8"]) if feed.get("field8") else None
 
-        if current_time - start_time >= timedelta(minutes=1):  # setiap 1 jam, kalo mau testing tinggal diganti ke timedelta(minutes=10)
-            if buffer_data:
-                sensor_id = buffer_data[-1]["sensor_id"]
-                avg_ch4 = round(sum(p["ch4"] for p in buffer_data) / len(buffer_data), 2)
-                avg_co2 = round(sum(p["co2"] for p in buffer_data) / len(buffer_data), 2)
+            # Hitung jumlah field yang None (null)
+            fields = [wind_speed, wind_dir, temp, humid, pm25, pm10, co2, ch4]
+            null_count = sum(1 for f in fields if f is None)
 
             # Jika lebih dari 4 field null, skip insert
             if null_count > 4:
