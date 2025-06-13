@@ -1,18 +1,17 @@
 ---
 
-## 📡 Sensor MQTT to MySQL Logger
+## 🌬️ Sensor Data Fetcher: ThingSpeak to MySQL
 
-Proyek ini adalah aplikasi Python yang menerima data dari sensor melalui MQTT, menghitung rata-rata data setiap 1 jam dari 10 data terakhir, lalu menyimpannya ke MySQL (Aiven).
+Aplikasi Python ini mengambil data sensor dari ThingSpeak API, memfilter data yang terlalu banyak nilai null, lalu menyimpannya ke MySQL (Aiven).
 
 ---
 
 ### 🔧 Fitur Utama
 
-- Menerima data CH4 dan CO2 via MQTT
-- Mengelola buffer data terakhir menggunakan `deque`
-- Rata-rata data setiap 1 jam
-- Menyimpan hasil ke MySQL dengan `entry_id` unik berbasis waktu
-- Support multi sensor (`sensor_id`)
+- Mengambil data sensor dari ThingSpeak API (otomatis setiap 1 jam)
+- Mendukung field: wind_speed, wind_direction, temperature, humidity, pm25, pm10, co2, ch4
+- Memfilter data: jika lebih dari 4 field null, data dilewati
+- Menyimpan hasil ke MySQL dengan `entry_id` dan `created_at`
 - Siap di-deploy dan di-scale
 
 ---
@@ -21,9 +20,8 @@ Proyek ini adalah aplikasi Python yang menerima data dari sensor melalui MQTT, m
 
 ```
 .
-├── main.py              # MQTT Subscriber + DB Logger
-├── publisher.py         # Simulasi publisher sensor
-├── .env.example         # Variabel environment (MQTT & DB) sebagai template, tinggal dicopas terus ganti nama jadi .env
+├── main.py              # Fetcher ThingSpeak + DB Logger
+├── .env.example         # Variabel environment (API & DB) sebagai template
 ├── requirements.txt     # Python dependencies
 ├── README.md            # Dokumentasi ini
 ```
@@ -50,12 +48,9 @@ pip install -r requirements.txt
 Buat file `.env` di root project:
 
 ```env
-# MQTT
-MQTT_BROKER=broker.emqx.io
-MQTT_PORT=1883
-MQTT_USER=username
-MQTT_PASSWORD=password
-MQTT_TOPIC=sensor/data
+# ThingSpeak API
+THINGSPEAK_URL=https://api.thingspeak.com/channels/CHANNEL_ID/feeds.json
+THINGSPEAK_API_KEY=your-api-key
 
 # MySQL Aiven
 DB_HOST=your-aiven-hostname
@@ -69,31 +64,28 @@ DB_NAME=your-db-name
 
 ### 🚀 Menjalankan Aplikasi
 
-#### 1. Jalankan Subscriber
-
 ```bash
 python main.py
 ```
 
-> Ini akan mendengarkan data dari MQTT broker dan menyimpan data ke database.
-
-#### 2. Jalankan Publisher (untuk testing)
-
-```bash
-python publisher.py
-```
-
-> Script ini akan mengirimkan data sensor acak (CH4 & CO2) setiap detik ke MQTT broker.
+> Script akan mengambil data dari ThingSpeak API setiap 1 jam dan menyimpannya ke database.
 
 ---
 
-### 🧪 Contoh Data JSON (dikirim via MQTT)
+### 🧪 Contoh Data JSON (dari ThingSpeak)
 
 ```json
 {
-  "sensor_id": "sensor_gas_01",
-  "ch4": 120.5,
-  "co2": 400.3
+  "entry_id": 123,
+  "created_at": "2024-06-01T12:00:00Z",
+  "field1": "2.5",
+  "field2": "180",
+  "field3": "29.1",
+  "field4": "70",
+  "field5": "12.3",
+  "field6": "25.7",
+  "field7": "400",
+  "field8": "1.2"
 }
 ```
 
@@ -104,11 +96,16 @@ python publisher.py
 ```sql
 CREATE TABLE sensor_data (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    entry_id VARCHAR(100),
-    sensor_id VARCHAR(255),
-    ch4_value FLOAT,
-    co2_value FLOAT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    entry_id INT,
+    created_at DATETIME,
+    wind_speed FLOAT,
+    wind_direction FLOAT,
+    temperature FLOAT,
+    humidity FLOAT,
+    pm25 FLOAT,
+    pm10 FLOAT,
+    co2 FLOAT,
+    ch4 FLOAT
 );
 ```
 
@@ -117,9 +114,9 @@ CREATE TABLE sensor_data (
 ### 📊 Output (Contoh Log)
 
 ```bash
-Received: {'sensor_id': 'sensor_gas_01', 'ch4': 120.3, 'co2': 410.1}
-[2025-04-21 14:33:00] Inserted entry 20250421143300: CH4=119.25, CO2=405.87 from 10 data points
-Last 10 data from DB: [...]
+Data entry_id 123 inserted.
+Data entry_id 124 dilewati karena terlalu banyak data null (5/8).
+Waiting for 1 hour before next fetch...
 ```
 
 ---
