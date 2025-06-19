@@ -1,18 +1,20 @@
 ---
 
-## 🌬️ Sensor Data Fetcher: ThingSpeak to MySQL
+## 🌬️ Sensor Data Fetcher & Emission Pipeline
 
-Aplikasi Python ini mengambil data sensor dari ThingSpeak API, memfilter data yang terlalu banyak nilai null, lalu menyimpannya ke MySQL (Aiven).
+Aplikasi Python ini mengambil data sensor dari ThingSpeak API, menyimpannya ke MySQL, lalu melakukan sinkronisasi dan perhitungan otomatis untuk pelaporan emisi (terintegrasi dengan Laravel DB).
 
 ---
 
 ### 🔧 Fitur Utama
 
-- Mengambil data sensor dari ThingSpeak API (otomatis setiap 1 jam)
-- Mendukung field: wind_speed, wind_direction, temperature, humidity, pm25, pm10, co2, ch4
-- Memfilter data: jika lebih dari 4 field null, data dilewati
-- Menyimpan hasil ke MySQL dengan `entry_id` dan `created_at`
-- Siap di-deploy dan di-scale
+- Fetch data sensor dari ThingSpeak API (otomatis setiap 1 jam)
+- Sinkronisasi data sensor ke database Laravel
+- Perhitungan otomatis fugitive emission (CH4 & CO2) harian
+- Perhitungan dan insert otomatis aktivitas fuel combustion
+- Generate laporan harian, bulanan, tahunan secara otomatis
+- Logging ke file dan console (`emission_pipeline.log`)
+- Siap di-deploy dan di-scale (multi-threaded)
 
 ---
 
@@ -20,8 +22,8 @@ Aplikasi Python ini mengambil data sensor dari ThingSpeak API, memfilter data ya
 
 ```
 .
-├── main.py              # Fetcher ThingSpeak + DB Logger
-├── .env.example         # Variabel environment (API & DB) sebagai template
+├── main.py              # Pipeline utama (fetch, sync, emission, report)
+├── .env.example         # Template variabel environment (API & DB)
 ├── requirements.txt     # Python dependencies
 ├── README.md            # Dokumentasi ini
 ```
@@ -52,12 +54,19 @@ Buat file `.env` di root project:
 THINGSPEAK_URL=https://api.thingspeak.com/channels/CHANNEL_ID/feeds.json
 THINGSPEAK_API_KEY=your-api-key
 
-# MySQL Aiven
-DB_HOST=your-aiven-hostname
-DB_PORT=your-port
-DB_USER=your-user
-DB_PASSWORD=your-password
-DB_NAME=your-db-name
+# MySQL Sensor DB
+DB_SENSOR_HOST=your-sensor-db-host
+DB_SENSOR_PORT=your-sensor-db-port
+DB_SENSOR_USER=your-sensor-db-user
+DB_SENSOR_PASSWORD=your-sensor-db-password
+DB_SENSOR_NAME=your-sensor-db-name
+
+# MySQL Laravel DB
+DB_LARAVEL_HOST=your-laravel-db-host
+DB_LARAVEL_PORT=your-laravel-db-port
+DB_LARAVEL_USER=your-laravel-db-user
+DB_LARAVEL_PASSWORD=your-laravel-db-password
+DB_LARAVEL_NAME=your-laravel-db-name
 ```
 
 ---
@@ -68,7 +77,7 @@ DB_NAME=your-db-name
 python main.py
 ```
 
-> Script akan mengambil data dari ThingSpeak API setiap 1 jam dan menyimpannya ke database.
+> Semua proses berjalan otomatis: fetch sensor, sync ke Laravel, insert emission, fuel combustion, dan laporan.
 
 ---
 
@@ -91,7 +100,7 @@ python main.py
 
 ---
 
-### 🗃️ Struktur Tabel MySQL
+### 🗃️ Struktur Tabel Sensor (MySQL)
 
 ```sql
 CREATE TABLE sensor_data (
@@ -114,9 +123,11 @@ CREATE TABLE sensor_data (
 ### 📊 Output (Contoh Log)
 
 ```bash
-Data entry_id 123 inserted.
-Data entry_id 124 dilewati karena terlalu banyak data null (5/8).
-Waiting for 1 hour before next fetch...
+[2024-06-01 12:00:00] [INFO] [Sensor] Data entry_id 123 inserted.
+[2024-06-01 12:01:00] [INFO] [Sync] Sensor entry_id 123 synced to Laravel DB.
+[2024-06-01 12:02:00] [INFO] [FugitiveEmission] Inserted for 2024-06-01
+[2024-06-01 12:03:00] [INFO] [FuelCombustion] Inserted for 2024-06-01 - sumber 1
+[2024-06-01 12:04:00] [INFO] [Report] Harian inserted for 2024-06-01
 ```
 
 ---
