@@ -7,25 +7,34 @@ Proyek ini mengembangkan sistem otomatisasi pelaporan emisi gas rumah kaca (GRK)
 ## 📁 Struktur Folder
 
 ```plaintext
-TAv2/
-│
-├── main.py                      # Entry point: Menjalankan seluruh proses sinkronisasi dan pelaporan
-│
+TAV2/
 ├── db/
-│   └── connection.py            # Fungsi koneksi ke database sensor dan Laravel
-│
-├── models/
-│   ├── emission_calculator.py  # Fungsi perhitungan emisi CO2, CH4, N2O
-│   └── report_generator.py     # Kelas untuk generate laporan harian, bulanan, tahunan
+│   ├── __init__.py
+│   └── connection.py              # Koneksi ke DB Laravel & DB Sensor
 │
 ├── services/
-│   ├── fuel_combustion.py      # Sinkronisasi & perhitungan emisi dari data aktivitas pembakaran
-│   └── sensor_sync.py          # Sinkronisasi data sensor dari database ThingSpeak ke Laravel
+│   ├── __init__.py
+│   ├── fuel_combustion.py         # Hitung emisi dari pembakaran bahan bakar
+│   ├── fugitive_emission.py       # Perhitungan otomati emisi fugitive
+│   ├── report_generator.py        # Generate laporan harian, bulanan, tahunan
+│   ├── sensor_fetcher.py          # Fetch data dari ThingSpeak/MQTT
+│   └── sensor_sync.py             # Sinkronisasi sensor ke Laravel
 │
-└── README.md                   # Dokumentasi proyek
+├── venv/                          # Virtual environment (jangan sentuh), buatnya python -m venv venv
+│
+├── .env                           # Konfigurasi kredensial (tidak disertakan ke git)
+├── .env.example                   # Contoh isi .env
+├── .gitignore                     # File/folder yang diabaikan Git
+├── config.py                      # Konfigurasi global
+├── emission_pipeline.log          # Log hasil eksekusi program
+├── logger.py                      # Setup logger
+├── main.py                        # Entry point: jalankan semua task paralel
+├── readme.md                      # Dokumentasi proyek
+└── requirements.txt               # Daftar library Python
+
 ```
 
-# ⚙️ Ketergantungan
+# ⚙️ Depedency
 ## 1. Database
 MySQL / MariaDB
 
