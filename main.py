@@ -105,15 +105,14 @@ def sync_sensor_data_to_laravel():
                 if cursor_laravel.fetchone()[0] > 0:
                     continue
 
-                # Perhatikan urutan kolom di INSERT INTO harus cocok dengan VALUES
                 cursor_laravel.execute("""
                     INSERT INTO sensor_entries 
-                    (entry_id, inserted_at, wind_speed, wind_direction, temperature, humidity, pm25, pm10, co2, ch4, sensor_id, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (entry_id, inserted_at, wind_speed, wind_direction, temperature, humidity, pm25, pm10, co2, ch4, sensor_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     row["entry_id"], row["created_at"], row["wind_speed"], row["wind_direction"],
                     row["temperature"], row["humidity"], row["pm25"], row["pm10"], row["co2"], row["ch4"],
-                    1, datetime.now(), datetime.now() # Menambahkan sensor_id, created_at, updated_at
+                    1  # sensor_id default
                 ))
                 logging.info(f"[Sync] Sensor entry_id {row['entry_id']} synced to Laravel DB.")
 
@@ -251,7 +250,7 @@ def insert_report():
                 emissions = get_emission_from_json("DATE(period) = %s", (day,))
                 if emissions is None:
                     continue
-                total_co2, total_ch4, total_n2o, total_pm25, total_pm10, avg_co2, avg_ch4, avg_n2o, avg_pm25, avg_pm10 = emissions
+                total_co2, total_ch4, total_n2o, avg_co2, avg_ch4, avg_n2o = emissions
 
                 cursor.execute("""
                     SELECT id FROM sensor_entries
@@ -271,34 +270,31 @@ def insert_report():
                 """, (day,))
                 avg_row = cursor.fetchone()
                 avg_wind, avg_dir, avg_pm25, avg_pm10 = avg_row if avg_row else (0, 0, 0, 0)
-                
-                # MODIFIKASI: Membuat report_name untuk harian
+
                 report_name = day.strftime("GRK_%Y_%m_%d")
 
-                # MODIFIKASI: Menambahkan 'report_name' ke query INSERT
                 cursor.execute("""
                     INSERT INTO reports
-                    (period_type, period_date, category_code, report_name, total_co2, total_ch4, total_n2o, total_pm25, total_pm10, avg_co2, avg_ch4, avg_n2o,
-                     avg_wind_speed, avg_wind_dir, avg_pm25, avg_pm10, komentar, perusahaan_id, sumber_emisi_id, sensor_id,
-                     created_at, updated_at)
+                    (period_type, period_date, category_code, report_name, total_co2, total_ch4, total_n2o,
+                     avg_co2, avg_ch4, avg_n2o, avg_wind_speed, avg_wind_dir, avg_pm25, avg_pm10,
+                     komentar, perusahaan_id, sumber_emisi_id, sensor_id, created_at, updated_at)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, ("harian", day, "1A1", report_name, total_co2, total_ch4, total_n2o, total_pm25, total_pm10, avg_co2, avg_ch4, avg_n2o,
-                      avg_wind, avg_dir, avg_pm25, avg_pm10, "Auto-generated", 1, 1, sensor_id, now, now))
-                
+                """, ("harian", day, "1A1", report_name, total_co2, total_ch4, total_n2o,
+                      avg_co2, avg_ch4, avg_n2o, avg_wind, avg_dir, avg_pm25, avg_pm10,
+                      "Auto-generated", 1, 1, sensor_id, now, now))
+
                 logging.info(f"[Report] Harian inserted for {day} with name {report_name}")
 
             # Bulanan
             for month_delta in range(0, 12):
-                # Logika tanggal yang lebih akurat untuk bulan-bulan sebelumnya
-                first_day_of_current_month = today.replace(day=1)
-                month_date = (first_day_of_current_month - timedelta(days=month_delta * 28)).replace(day=1)
+                month_date = (today.replace(day=1) - timedelta(days=month_delta * 30)).replace(day=1)
                 if data_exists(cursor, "bulanan", month_date):
                     continue
 
                 emissions = get_emission_from_json("MONTH(period) = %s AND YEAR(period) = %s", (month_date.month, month_date.year))
                 if emissions is None:
                     continue
-                total_co2, total_ch4, total_n2o, total_pm25, total_pm10, avg_co2, avg_ch4, avg_n2o, avg_pm25, avg_pm10 = emissions
+                total_co2, total_ch4, total_n2o, avg_co2, avg_ch4, avg_n2o = emissions
 
                 cursor.execute("""
                     SELECT AVG(wind_speed), AVG(wind_direction), AVG(pm25), AVG(pm10)
@@ -308,31 +304,31 @@ def insert_report():
                 avg_row = cursor.fetchone()
                 avg_wind, avg_dir, avg_pm25, avg_pm10 = avg_row if avg_row else (0, 0, 0, 0)
 
-                # MODIFIKASI: Membuat report_name untuk bulanan
                 report_name = month_date.strftime("GRK_%Y_%m")
 
-                # MODIFIKASI: Menambahkan 'report_name' ke query INSERT
                 cursor.execute("""
                     INSERT INTO reports
-                    (period_type, period_date, category_code, report_name, total_co2, total_ch4, total_n2o, total_pm25, total_pm10, avg_co2, avg_ch4, avg_n2o,
-                     avg_wind_speed, avg_wind_dir, avg_pm25, avg_pm10, komentar, perusahaan_id, sumber_emisi_id, sensor_id, created_at, updated_at)
+                    (period_type, period_date, category_code, report_name, total_co2, total_ch4, total_n2o,
+                     avg_co2, avg_ch4, avg_n2o, avg_wind_speed, avg_wind_dir, avg_pm25, avg_pm10,
+                     komentar, perusahaan_id, sumber_emisi_id, sensor_id, created_at, updated_at)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, ("bulanan", month_date, "1A1", report_name, total_co2, total_ch4, total_n2o, total_pm25, total_pm10, avg_co2, avg_ch4, avg_n2o,
-                      avg_wind, avg_dir, avg_pm25, avg_pm10, "Auto-generated", 1, 1, 1, now, now))
+                """, ("bulanan", month_date, "1A1", report_name, total_co2, total_ch4, total_n2o,
+                      avg_co2, avg_ch4, avg_n2o, avg_wind, avg_dir, avg_pm25, avg_pm10,
+                      "Auto-generated", 1, 1, 1, now, now))
 
-                logging.info(f"[Report] Bulanan inserted for {month_date:%Y-%m} with name {report_name}")
+                logging.info(f"[Report] Bulanan inserted for {month_date.strftime('%Y-%m')}")
 
             # Tahunan
             for year_offset in range(0, 3):
-                # Logika tanggal yang lebih akurat untuk tahun-tahun sebelumnya
-                year_date = (today.replace(month=1, day=1) - timedelta(days=year_offset * 365)).replace(month=1, day=1)
+                year_date = today.replace(month=1, day=1) - timedelta(days=year_offset * 365)
+                year_date = year_date.replace(month=1, day=1)
                 if data_exists(cursor, "tahunan", year_date):
                     continue
 
                 emissions = get_emission_from_json("YEAR(period) = %s", (year_date.year,))
                 if emissions is None:
                     continue
-                total_co2, total_ch4, total_n2o, total_pm25, total_pm10, avg_co2, avg_ch4, avg_n2o, avg_pm25, avg_pm10 = emissions
+                total_co2, total_ch4, total_n2o, avg_co2, avg_ch4, avg_n2o = emissions
 
                 cursor.execute("""
                     SELECT AVG(wind_speed), AVG(wind_direction), AVG(pm25), AVG(pm10)
@@ -342,19 +338,19 @@ def insert_report():
                 avg_row = cursor.fetchone()
                 avg_wind, avg_dir, avg_pm25, avg_pm10 = avg_row if avg_row else (0, 0, 0, 0)
 
-                # MODIFIKASI: Membuat report_name untuk tahunan
                 report_name = year_date.strftime("GRK_%Y")
 
-                # MODIFIKASI: Menambahkan 'report_name' ke query INSERT
                 cursor.execute("""
                     INSERT INTO reports
-                    (period_type, period_date, category_code, report_name, total_co2, total_ch4, total_n2o, total_pm25, total_pm10 avg_co2, avg_ch4, avg_n2o,
-                     avg_wind_speed, avg_wind_dir, avg_pm25, avg_pm10, komentar, perusahaan_id, sumber_emisi_id, sensor_id, created_at, updated_at)
+                    (period_type, period_date, category_code, report_name, total_co2, total_ch4, total_n2o,
+                     avg_co2, avg_ch4, avg_n2o, avg_wind_speed, avg_wind_dir, avg_pm25, avg_pm10,
+                     komentar, perusahaan_id, sumber_emisi_id, sensor_id, created_at, updated_at)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, ("tahunan", year_date, "1A1", report_name, total_co2, total_ch4, total_n2o, total_pm25, total_pm10, avg_co2, avg_ch4, avg_n2o,
-                      avg_wind, avg_dir, avg_pm25, avg_pm10, "Auto-generated", 1, 1, 1, now, now))
-                
-                logging.info(f"[Report] Tahunan inserted for {year_date.year} with name {report_name}")
+                """, ("tahunan", year_date, "1A1", report_name, total_co2, total_ch4, total_n2o,
+                      avg_co2, avg_ch4, avg_n2o, avg_wind, avg_dir, avg_pm25, avg_pm10,
+                      "Auto-generated", 1, 1, 1, now, now))
+
+                logging.info(f"[Report] Tahunan inserted for {year_date.year}")
 
             db_laravel.commit()
             cursor.close()
@@ -367,6 +363,7 @@ def insert_report():
                 db_laravel.close()
             logging.info("[Report] Waiting for the next run...")
             time.sleep(86400)
+
 
 # ================================================================================= #
 # ========================= FUNGSI YANG DIMODIFIKASI SELESAI ======================== #
