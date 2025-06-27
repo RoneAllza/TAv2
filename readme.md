@@ -56,7 +56,7 @@ cp .env.example .env
 
 Lalu isi .env sesuai dengan kebutuhan masing-masing.
 
-#⚡ Konfigurasi Database
+# ⚡ Konfigurasi Database
 Edit file db/connection.py:
 
 ```python
