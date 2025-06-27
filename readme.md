@@ -1,145 +1,172 @@
----
+# 🌱 Sistem Informasi Pelaporan Emisi GRK Scope 1 (TAv2)
 
-## 🌬️ Sensor Data Fetcher & Emission Pipeline
-
-Aplikasi Python ini mengambil data sensor dari ThingSpeak API, menyimpannya ke MySQL, lalu melakukan sinkronisasi dan perhitungan otomatis untuk pelaporan emisi (terintegrasi dengan Laravel DB).
+Proyek ini mengembangkan sistem otomatisasi pelaporan emisi gas rumah kaca (GRK) **Scope 1** berbasis **IoT dan Machine Learning**. Sistem ini secara rutin mengambil data dari sumber sensor dan data kegiatan pembakaran bahan bakar, lalu menghitung emisi, menyimpannya dalam basis data, dan menghasilkan laporan harian, bulanan, dan tahunan.
 
 ---
 
-### 🔧 Fitur Utama
+## 📁 Struktur Folder
 
-- Fetch data sensor dari ThingSpeak API (otomatis setiap 1 jam)
-- Sinkronisasi data sensor ke database Laravel
-- Perhitungan otomatis fugitive emission (CH4 & CO2) harian
-- Perhitungan dan insert otomatis aktivitas fuel combustion
-- Generate laporan harian, bulanan, tahunan secara otomatis
-- Logging ke file dan console (`emission_pipeline.log`)
-- Siap di-deploy dan di-scale (multi-threaded)
-
----
-
-### 🛠️ Struktur File
+```plaintext
+TAV2/
+├── db/
+│   ├── __init__.py
+│   └── connection.py              # Koneksi ke DB Laravel & DB Sensor
+│
+├── services/
+│   ├── __init__.py
+│   ├── fuel_combustion.py         # Hitung emisi dari pembakaran bahan bakar
+│   ├── fugitive_emission.py       # Perhitungan otomati emisi fugitive
+│   ├── report_generator.py        # Generate laporan harian, bulanan, tahunan
+│   ├── sensor_fetcher.py          # Fetch data dari ThingSpeak/MQTT
+│   └── sensor_sync.py             # Sinkronisasi sensor ke Laravel
+│
+├── venv/                          # Virtual environment (jangan sentuh), buatnya python -m venv venv
+│
+├── .env                           # Konfigurasi kredensial (tidak disertakan ke git)
+├── .env.example                   # Contoh isi .env
+├── .gitignore                     # File/folder yang diabaikan Git
+├── config.py                      # Konfigurasi global
+├── emission_pipeline.log          # Log hasil eksekusi program
+├── logger.py                      # Setup logger
+├── main.py                        # Entry point: jalankan semua task paralel
+├── readme.md                      # Dokumentasi proyek
+└── requirements.txt               # Daftar library Python
 
 ```
-.
-├── main.py              # Pipeline utama (fetch, sync, emission, report)
-├── .env.example         # Template variabel environment (API & DB)
-├── requirements.txt     # Python dependencies
-├── README.md            # Dokumentasi ini
+
+# ⚙️ Depedency
+## 1. Database
+MySQL / MariaDB
+
+Database Laravel (laravel_db)
+
+Database Sensor (sensor_db - misalnya dari ThingSpeak)
+
+Tabel penting:
+```plaintext
+sensor_entries
+
+fuel_combustion_activities
+
+sumber_emisis
+
+fuel_properties
+
+reports
 ```
 
----
-
-### 📦 Instalasi
-
-#### 1. Clone Repository
-
-```bash
-git clone https://github.com/username/nama-repo.git
-cd nama-repo
-```
-
-#### 2. Install Dependency
+## 2. Python Packages
+Instalasi:
 
 ```bash
 pip install -r requirements.txt
+cp .env.example .env
 ```
 
-#### 3. Buat file `.env`
+Lalu isi .env sesuai dengan kebutuhan masing-masing.
 
-Buat file `.env` di root project:
+# ⚡ Konfigurasi Database
+Edit file .env yang sudah dibuat dari .env.example:
 
-```env
-# ThingSpeak API
-THINGSPEAK_URL=https://api.thingspeak.com/channels/CHANNEL_ID/feeds.json
-THINGSPEAK_API_KEY=your-api-key
+```text
+# MQTT
+MQTT_BROKER=
+MQTT_PORT=
+MQTT_TOPIC=
+MQTT_USER=
+MQTT_PASSWORD=
 
-# MySQL Sensor DB
-DB_SENSOR_HOST=your-sensor-db-host
-DB_SENSOR_PORT=your-sensor-db-port
-DB_SENSOR_USER=your-sensor-db-user
-DB_SENSOR_PASSWORD=your-sensor-db-password
-DB_SENSOR_NAME=your-sensor-db-name
+# DB Sensor (sudah ada sebelumnya)
+DB_SENSOR_HOST=
+DB_SENSOR_PORT=
+DB_SENSOR_USER=
+DB_SENSOR_PASSWORD=
+DB_SENSOR_NAME=defaultdb
 
-# MySQL Laravel DB
-DB_LARAVEL_HOST=your-laravel-db-host
-DB_LARAVEL_PORT=your-laravel-db-port
-DB_LARAVEL_USER=your-laravel-db-user
-DB_LARAVEL_PASSWORD=your-laravel-db-password
-DB_LARAVEL_NAME=your-laravel-db-name
+# DB Laravel (baru ditambahkan)
+DB_LARAVEL_HOST=
+DB_LARAVEL_PORT=
+DB_LARAVEL_USER=
+DB_LARAVEL_PASSWORD=
+DB_LARAVEL_NAME=defaultdb
+
+# Thingspeak
+THINGSPEAK_URL=https://api.thingspeak.com/
+THINGSPEAK_API_KEY=
+
 ```
 
----
-
-### 🚀 Menjalankan Aplikasi
+# 🚀 Cara Menjalankan
+## 1. Jalankan seluruh sistem
 
 ```bash
 python main.py
 ```
 
-> Semua proses berjalan otomatis: fetch sensor, sync ke Laravel, insert emission, fuel combustion, dan laporan.
+## 2. Penjadwalan otomatis
+Secara default, main.py akan:
 
----
+- Menarik data sensor tiap 1 jam
+- Menjalankan sinkronisasi fuel_combustion
+- Menghasilkan laporan report_generator
 
-### 🧪 Contoh Data JSON (dari ThingSpeak)
+# 📘 Penjelasan Modul
+Modul	Fungsi
+```plaintext
+sensor_sync.py	Sinkronisasi data sensor dari database sensor ke Laravel
+fuel_combustion.py	Mengambil data sumber emisi & menghitung emisi berdasarkan fuel_properties
+report_generator.py	Menghitung total dan rata-rata emisi untuk laporan harian, bulanan, tahunan
+connection.py	Koneksi database Laravel & Sensor
+main.py	Menjalankan ketiga proses di atas secara paralel
+```
+
+# 🧠 Logika Perhitungan Emisi
+```text
+Energi (TJ) = Jumlah Konsumsi x Conversion Factor
+Emisi (ton) = Energi x Emission Factor / 1000
+```
+
+Contoh struktur JSON kolom emission_factor dan total_emission_ton:
 
 ```json
 {
-  "entry_id": 123,
-  "created_at": "2024-06-01T12:00:00Z",
-  "field1": "2.5",
-  "field2": "180",
-  "field3": "29.1",
-  "field4": "70",
-  "field5": "12.3",
-  "field6": "25.7",
-  "field7": "400",
-  "field8": "1.2"
+  "co2": 74.1,
+  "ch4": 3.2,
+  "n2o": 1.5
 }
 ```
+# 📊 Format Laporan
+Laporan otomatis diinsert ke tabel reports
 
----
+Terdiri dari:
+```plaintext
+period_type: harian, bulanan, tahunan
 
-### 🗃️ Struktur Tabel Sensor (MySQL)
+period_date: tanggal awal periode
 
-```sql
-CREATE TABLE sensor_data (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    entry_id INT,
-    created_at DATETIME,
-    wind_speed FLOAT,
-    wind_direction FLOAT,
-    temperature FLOAT,
-    humidity FLOAT,
-    pm25 FLOAT,
-    pm10 FLOAT,
-    co2 FLOAT,
-    ch4 FLOAT
-);
+report_name: e.g., GRK_2025_06, GRK_2025_06_28
+
+total_*, avg_* dari sensor dan hasil kalkulasi
+
+sensor_id, komentar, sumber_emisi_id, perusahaan_id
+```
+# 🛠️ Troubleshooting
+Masalah	Solusi:
+- ImportError pada get_sensor_db_connection; 
+  - Pastikan connection.py berisi fungsi yang benar
+- Data fuel_properties kosong;	
+  - Pastikan semua sumber_emisis memiliki ID fuel_properties valid
+- Tidak muncul laporan;	
+  - Cek apakah data sensor_entries dan fuel_combustion_activities tersedia untuk tanggal tersebut
+
+# 🧪 Testing Manual
+Untuk menjalankan satu bagian saja:
+
+```python
+# Dalam Python REPL
+from services.fuel_combustion import FuelCombustionInserter
+FuelCombustionInserter().run()
 ```
 
----
-
-### 📊 Output (Contoh Log)
-
-```bash
-[2024-06-01 12:00:00] [INFO] [Sensor] Data entry_id 123 inserted.
-[2024-06-01 12:01:00] [INFO] [Sync] Sensor entry_id 123 synced to Laravel DB.
-[2024-06-01 12:02:00] [INFO] [FugitiveEmission] Inserted for 2024-06-01
-[2024-06-01 12:03:00] [INFO] [FuelCombustion] Inserted for 2024-06-01 - sumber 1
-[2024-06-01 12:04:00] [INFO] [Report] Harian inserted for 2024-06-01
-```
-
----
-
-### 🤝 Kontribusi
-
-Pull request dan issue sangat diterima! Silakan fork dan kembangkan.
-
----
-
-### 📄 Lisensi
-
-MIT License © 2025 Rifqi Abdulaziz
-
----
+# 🧾 Lisensi
+Proyek ini dikembangkan sebagai bagian dari Tugas Akhir oleh [@roneallza](https://github.com/RoneAllza), dan juga kontribusi dari [@ryanmoehs](https://github.com/ryanmoehs).

@@ -2,3 +2,5 @@
 .venv/
 *.log
 venv/
+__pycache__/
+**/__pycache__/
