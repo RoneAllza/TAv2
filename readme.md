@@ -135,9 +135,12 @@ sensor_id, komentar, sumber_emisi_id, perusahaan_id
 ```
 # 🛠️ Troubleshooting
 Masalah	Solusi:
-- ImportError pada get_sensor_db_connection	Pastikan connection.py berisi fungsi yang benar
-- Data fuel_properties kosong	Pastikan semua sumber_emisis memiliki ID fuel_properties valid
-- Tidak muncul laporan	Cek apakah data sensor_entries dan fuel_combustion_activities tersedia untuk tanggal tersebut
+- ImportError pada get_sensor_db_connection; 
+  - Pastikan connection.py berisi fungsi yang benar
+- Data fuel_properties kosong;	
+  - Pastikan semua sumber_emisis memiliki ID fuel_properties valid
+- Tidak muncul laporan;	
+  - Cek apakah data sensor_entries dan fuel_combustion_activities tersedia untuk tanggal tersebut
 
 # 🧪 Testing Manual
 Untuk menjalankan satu bagian saja:
