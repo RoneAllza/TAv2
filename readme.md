@@ -23,7 +23,7 @@ TAv2/
 │   └── sensor_sync.py          # Sinkronisasi data sensor dari database ThingSpeak ke Laravel
 │
 └── README.md                   # Dokumentasi proyek
-'''
+```
 
 # ⚙️ Ketergantungan
 ## 1. Database
@@ -34,7 +34,7 @@ Database Laravel (laravel_db)
 Database Sensor (sensor_db - misalnya dari ThingSpeak)
 
 Tabel penting:
-'''plaintext
+```plaintext
 sensor_entries
 
 fuel_combustion_activities
@@ -44,22 +44,22 @@ sumber_emisis
 fuel_properties
 
 reports
-'''
+```
 
 ## 2. Python Packages
 Instalasi:
 
-'''bash
+```bash
 pip install -r requirements.txt
 cp .env.example .env
-'''
+```
 
 Lalu isi .env sesuai dengan kebutuhan masing-masing.
 
 #⚡ Konfigurasi Database
 Edit file db/connection.py:
 
-'''python
+```python
 import mysql.connector
 
 def get_sensor_db_connection():
@@ -77,14 +77,14 @@ def get_laravel_db_connection():
         password="password_laravel",
         database="laravel_db"
     )
-'''
+```
 
 # 🚀 Cara Menjalankan
 ## 1. Jalankan seluruh sistem
 
-'''bash
+```bash
 python main.py
-'''
+```
 
 ## 2. Penjadwalan otomatis
 Secara default, main.py akan:
@@ -95,34 +95,34 @@ Secara default, main.py akan:
 
 # 📘 Penjelasan Modul
 Modul	Fungsi
-'''plaintext
+```plaintext
 sensor_sync.py	Sinkronisasi data sensor dari database sensor ke Laravel
 fuel_combustion.py	Mengambil data sumber emisi & menghitung emisi berdasarkan fuel_properties
 report_generator.py	Menghitung total dan rata-rata emisi untuk laporan harian, bulanan, tahunan
 connection.py	Koneksi database Laravel & Sensor
 main.py	Menjalankan ketiga proses di atas secara paralel
-'''
+```
 
 # 🧠 Logika Perhitungan Emisi
-'''text
+```text
 Energi (TJ) = Jumlah Konsumsi x Conversion Factor
 Emisi (ton) = Energi x Emission Factor / 1000
-'''
+```
 
 Contoh struktur JSON kolom emission_factor dan total_emission_ton:
 
-'''json
+```json
 {
   "co2": 74.1,
   "ch4": 3.2,
   "n2o": 1.5
 }
-'''
+```
 # 📊 Format Laporan
 Laporan otomatis diinsert ke tabel reports
 
 Terdiri dari:
-'''plaintext
+```plaintext
 period_type: harian, bulanan, tahunan
 
 period_date: tanggal awal periode
@@ -132,7 +132,7 @@ report_name: e.g., GRK_2025_06, GRK_2025_06_28
 total_*, avg_* dari sensor dan hasil kalkulasi
 
 sensor_id, komentar, sumber_emisi_id, perusahaan_id
-'''
+```
 # 🛠️ Troubleshooting
 Masalah	Solusi
 ImportError pada get_sensor_db_connection	Pastikan connection.py berisi fungsi yang benar
@@ -142,11 +142,11 @@ Tidak muncul laporan	Cek apakah data sensor_entries dan fuel_combustion_activiti
 # 🧪 Testing Manual
 Untuk menjalankan satu bagian saja:
 
-'''python
+```python
 # Dalam Python REPL
 from services.fuel_combustion import FuelCombustionInserter
 FuelCombustionInserter().run()
-'''
+```
 
 🧾 Lisensi
 Proyek ini dikembangkan sebagai bagian dari Tugas Akhir oleh @roneallza, dan juga kontribusi dari @ryanmoehs.
