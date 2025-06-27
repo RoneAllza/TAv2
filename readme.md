@@ -57,26 +57,34 @@ cp .env.example .env
 Lalu isi .env sesuai dengan kebutuhan masing-masing.
 
 # ⚡ Konfigurasi Database
-Edit file db/connection.py:
+Edit file .env yang sudah dibuat dari .env.example:
 
-```python
-import mysql.connector
+```text
+# MQTT
+MQTT_BROKER=
+MQTT_PORT=
+MQTT_TOPIC=
+MQTT_USER=
+MQTT_PASSWORD=
 
-def get_sensor_db_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        user="username_sensor",
-        password="password_sensor",
-        database="sensor_db"
-    )
+# DB Sensor (sudah ada sebelumnya)
+DB_SENSOR_HOST=
+DB_SENSOR_PORT=
+DB_SENSOR_USER=
+DB_SENSOR_PASSWORD=
+DB_SENSOR_NAME=defaultdb
 
-def get_laravel_db_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        user="username_laravel",
-        password="password_laravel",
-        database="laravel_db"
-    )
+# DB Laravel (baru ditambahkan)
+DB_LARAVEL_HOST=
+DB_LARAVEL_PORT=
+DB_LARAVEL_USER=
+DB_LARAVEL_PASSWORD=
+DB_LARAVEL_NAME=defaultdb
+
+# Thingspeak
+THINGSPEAK_URL=https://api.thingspeak.com/
+THINGSPEAK_API_KEY=
+
 ```
 
 # 🚀 Cara Menjalankan
