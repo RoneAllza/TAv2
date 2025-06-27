@@ -151,5 +151,5 @@ from services.fuel_combustion import FuelCombustionInserter
 FuelCombustionInserter().run()
 ```
 
-🧾 Lisensi
-Proyek ini dikembangkan sebagai bagian dari Tugas Akhir oleh @roneallza, dan juga kontribusi dari @ryanmoehs.
+# 🧾 Lisensi
+Proyek ini dikembangkan sebagai bagian dari Tugas Akhir oleh [@roneallza](https://github.com/RoneAllza), dan juga kontribusi dari [@ryanmoehs](https://github.com/ryanmoehs).
