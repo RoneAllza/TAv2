@@ -62,8 +62,20 @@ class ReportGenerator:
                     row = cursor.fetchone()
                     return row[0] if row else None
 
+                def get_latest_sensor_id():
+                    cursor.execute("""
+                        SELECT id FROM sensor_entries
+                        ORDER BY inserted_at DESC LIMIT 1
+                    """)
+                    row = cursor.fetchone()
+                    return row[0] if row else None
+
                 def insert_or_update_report(period_type, date, report_name, emissions, sensor_data, sensor_id):
                     if not sensor_data:
+                        logging.warning(f"[Report] Missing sensor data for {report_name}, skipping.")
+                        return
+                    if not sensor_id:
+                        logging.warning(f"[Report] Invalid sensor_id for {report_name}, skipping to avoid FK error.")
                         return
 
                     t_co2, t_ch4, t_n2o, a_co2, a_ch4, a_n2o = emissions
@@ -92,7 +104,7 @@ class ReportGenerator:
                         """, (
                             period_type, date, "1A1", report_name, t_co2, t_ch4, t_n2o,
                             a_co2, a_ch4, a_n2o, w, dir, p25, p10,
-                            "Auto-generated", 1, 1, sensor_id or 1, now, now
+                            "Auto-generated", 1, 1, sensor_id, now, now
                         ))
                         logging.info(f"[Report] {period_type.title()} {report_name} inserted.")
 
@@ -102,7 +114,10 @@ class ReportGenerator:
                     emissions = get_emission("DATE(period) = %s", (d,))
                     if not emissions:
                         continue
-                    sensor_id = get_sensor_id(d)
+                    sensor_id = get_sensor_id(d) or get_latest_sensor_id()
+                    if not sensor_id:
+                        logging.warning(f"[Report] No sensor_id found for daily date {d}, even with fallback. Skipping.")
+                        continue
                     sensor_data = get_sensor_data("DATE(inserted_at) = %s", (d,))
                     report_name = d.strftime("GRK_%Y_%m_%d")
                     insert_or_update_report("harian", d, report_name, emissions, sensor_data, sensor_id)
@@ -113,9 +128,13 @@ class ReportGenerator:
                     emissions = get_emission("MONTH(period) = %s AND YEAR(period) = %s", (d.month, d.year))
                     if not emissions:
                         continue
+                    sensor_id = get_sensor_id(d) or get_latest_sensor_id()
+                    if not sensor_id:
+                        logging.warning(f"[Report] No sensor_id found for monthly date {d}, even with fallback. Skipping.")
+                        continue
                     sensor_data = get_sensor_data("MONTH(inserted_at) = %s AND YEAR(inserted_at) = %s", (d.month, d.year))
                     report_name = d.strftime("GRK_%Y_%m")
-                    insert_or_update_report("bulanan", d, report_name, emissions, sensor_data, sensor_id=1)
+                    insert_or_update_report("bulanan", d, report_name, emissions, sensor_data, sensor_id)
 
                 # Tahunan
                 for y in range(3):
@@ -123,9 +142,13 @@ class ReportGenerator:
                     emissions = get_emission("YEAR(period) = %s", (d.year,))
                     if not emissions:
                         continue
+                    sensor_id = get_sensor_id(d) or get_latest_sensor_id()
+                    if not sensor_id:
+                        logging.warning(f"[Report] No sensor_id found for yearly date {d}, even with fallback. Skipping.")
+                        continue
                     sensor_data = get_sensor_data("YEAR(inserted_at) = %s", (d.year,))
                     report_name = d.strftime("GRK_%Y")
-                    insert_or_update_report("tahunan", d, report_name, emissions, sensor_data, sensor_id=1)
+                    insert_or_update_report("tahunan", d, report_name, emissions, sensor_data, sensor_id)
 
                 db.commit()
                 cursor.close()

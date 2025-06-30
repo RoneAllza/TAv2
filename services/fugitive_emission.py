@@ -31,9 +31,8 @@ class FugitiveEmitter:
                         continue
 
                     avg_ch4, avg_co2 = result
-                    ef = 0.02
-                    ch4_emission_ton = avg_ch4 * ef
-                    co2_emission_ton = avg_co2
+                    ch4_emission_ton = avg_ch4  # sudah ton
+                    co2_emission_ton = avg_co2  # sudah ton
                     co2e = ch4_emission_ton + co2_emission_ton
 
                     cursor_laravel.execute("""
@@ -41,7 +40,7 @@ class FugitiveEmitter:
                         (source_name, production_amount, emission_factor, ch4_emission_ton,
                          co2_emission_ton, co2e_emission_ton, period, company_id)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    """, ("Sensor CH4", avg_ch4, ef, ch4_emission_ton,
+                    """, ("Sensor CH4", avg_ch4, 1.0, ch4_emission_ton,
                           co2_emission_ton, co2e, target_date, 1))
                     
                     logging.info(f"[FugitiveEmitter] Inserted for {target_date}")
@@ -56,7 +55,4 @@ class FugitiveEmitter:
                 logging.error(f"[FugitiveEmitter] Error: {e}")
                 
             logging.info("[FugitiveEmitter] Waiting for 24 hours before the next run...")
-            # Sleep for 24 hours before the next run
-            logging.info("[FugitiveEmitter] All sources processed successfully.")
-
             time.sleep(86400)
